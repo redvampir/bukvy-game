@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Буквенная игра</title>
   <style>
-    body { font-family: system-ui, Arial; text-align:center; margin:0; padding:24px; background:#fff7e6; transition: background 0.3s ease; }
+    body { font-family: system-ui, Arial; text-align:center; margin:0; padding:16px; background:#fff7e6; transition: background 0.3s ease; }
     body.dark-theme { background:#1a1a2e; color:#eee; }
     
     .card { max-width:860px; margin:0 auto; background:white; border-radius:18px; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,.08); }
     .dark-theme .card { background:#16213e; box-shadow:0 10px 25px rgba(0,0,0,.3); }
     
-    h1 { margin: 8px 0 10px; }
+    h1 { margin: 8px 0 10px; font-size: 32px; }
     .big { font-size:92px; margin:10px 0 4px; transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
     .big.bounce { animation: bounce 0.5s ease; }
     .big.shake { animation: shake 0.4s ease; }
@@ -42,23 +42,19 @@
       pointer-events: none;
     }
     
-    .hint { font-size:16px; opacity:.85; margin: 6px 0; }
+    .hint { font-size:14px; opacity:.85; margin: 6px 0; line-height: 1.4; }
     .dark-theme .hint { opacity:.7; }
     
-    .status { margin-top:10px; font-size:20px; min-height: 28px; font-weight: 500; }
+    .status { margin-top:10px; font-size:18px; min-height: 28px; font-weight: 500; }
     
-    button { font-size:18px; padding:12px 16px; border:0; border-radius:12px; background:#ff7a00; color:white; cursor:pointer; transition: all 0.2s ease; }
+    button { font-size:16px; padding:10px 14px; border:0; border-radius:12px; background:#ff7a00; color:white; cursor:pointer; transition: all 0.2s ease; }
     button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,122,0,0.3); }
     button.secondary { background:#ffd7b0; color:#4a2a00; }
     button.secondary:hover { background:#ffcda0; }
     button:active { transform: scale(0.98); }
-    .row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+    .row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
 
     .grid { display:grid; grid-template-columns: repeat(5, minmax(64px, 1fr)); gap:12px; margin-top:14px; }
-    @media (max-width: 600px) {
-      .grid { grid-template-columns: repeat(3, minmax(80px, 1fr)); gap:16px; }
-      .tile { font-size:48px; padding:24px 0; }
-    }
     
     .tile {
       font-size:42px; padding:18px 0; border-radius:16px; border:2px solid #f2f2f2;
@@ -79,22 +75,33 @@
     .dark-theme .tile.good { background:#1e4d2b; border-color:#56c271; }
     .dark-theme .tile.bad { background:#4d1e1e; border-color:#ff6b6b; }
 
-    .bar { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; }
-    .pill { background:#f2f2f2; padding:8px 12px; border-radius:999px; font-size:14px; transition: background 0.2s ease; }
+    .bar { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; }
+    .pill { background:#f2f2f2; padding:6px 10px; border-radius:999px; font-size:13px; transition: background 0.2s ease; white-space: nowrap; }
     .dark-theme .pill { background:#0f3460; }
-    select, input[type="checkbox"] { transform: scale(1.1); }
+    select, input[type="checkbox"] { transform: scale(1.05); }
     .dark-theme select { background:#0f3460; color:#fff; border-color:#1a4d7a; }
     .kbd { background:#f2f2f2; padding:4px 8px; border-radius:10px; font-weight:700; }
     .dark-theme .kbd { background:#0f3460; }
     
     /* Прогресс-бар */
-    .progress-container { margin: 12px 0; background: #e0e0e0; border-radius: 999px; height: 24px; overflow: hidden; }
+    .progress-container { margin: 12px 0; background: #e0e0e0; border-radius: 999px; height: 28px; overflow: hidden; position: relative; }
     .dark-theme .progress-container { background: #0f3460; }
-    .progress-bar { height: 100%; background: linear-gradient(90deg, #56c271, #4caf50); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
+    .progress-bar { 
+      height: 100%; 
+      background: linear-gradient(90deg, #56c271, #4caf50); 
+      transition: width 0.3s ease; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      color: white; 
+      font-weight: bold; 
+      font-size: 13px;
+      min-width: 40px;
+    }
     
     /* Достижения */
-    .achievements { display: flex; gap: 8px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
-    .achievement { font-size: 32px; opacity: 0.3; transition: all 0.3s ease; filter: grayscale(100%); }
+    .achievements { display: flex; gap: 6px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+    .achievement { font-size: 28px; opacity: 0.3; transition: all 0.3s ease; filter: grayscale(100%); }
     .achievement.unlocked { opacity: 1; filter: grayscale(0%); animation: pop 0.5s ease; }
     
     @keyframes pop {
@@ -103,8 +110,8 @@
     }
     
     /* История */
-    .history { margin: 12px 0; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-    .history-item { font-size: 24px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #f2f2f2; }
+    .history { margin: 12px 0; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 40px; }
+    .history-item { font-size: 22px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #f2f2f2; }
     .dark-theme .history-item { border-color: #1a4d7a; background: #0f3460; }
     .history-item.correct { background: #d9fbe1; border-color: #56c271; }
     .history-item.incorrect { background: #ffe0e0; border-color: #ff6b6b; }
@@ -112,12 +119,57 @@
     .dark-theme .history-item.incorrect { background: #4d1e1e; }
     
     /* Переключатель темы */
-    .theme-toggle { position: fixed; top: 20px; right: 20px; background: #ff7a00; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
+    .theme-toggle { position: fixed; top: 15px; right: 15px; background: #ff7a00; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
     .theme-toggle:hover { transform: scale(1.1); }
     .dark-theme .theme-toggle { background: #ffd700; }
     
     /* Звуковые эффекты индикатор */
-    .sound-toggle { position: fixed; top: 80px; right: 20px; background: #4caf50; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
+    .sound-toggle { position: fixed; top: 70px; right: 15px; background: #4caf50; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
+    .sound-toggle:hover { transform: scale(1.1); }
+    .sound-toggle.muted { background: #999; }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .card { padding: 14px; border-radius: 14px; }
+      h1 { font-size: 24px; margin: 6px 0 8px; }
+      .big { font-size: 72px; }
+      .hint { font-size: 12px; }
+      .status { font-size: 16px; }
+      
+      .bar { gap: 6px; margin-top: 8px; }
+      .pill { padding: 5px 8px; font-size: 11px; }
+      select { font-size: 11px; }
+      
+      button { font-size: 14px; padding: 8px 12px; }
+      .row { gap: 6px; }
+      
+      .grid { grid-template-columns: repeat(3, minmax(70px, 1fr)); gap: 10px; margin-top: 12px; }
+      .tile { font-size: 40px; padding: 16px 0; }
+      
+      .progress-container { height: 24px; margin: 10px 0; }
+      .progress-bar { font-size: 11px; min-width: 35px; }
+      
+      .achievements { gap: 4px; margin: 8px 0; }
+      .achievement { font-size: 24px; }
+      
+      .history { gap: 4px; min-height: 38px; }
+      .history-item { font-size: 18px; width: 32px; height: 32px; }
+      
+      .theme-toggle, .sound-toggle { width: 40px; height: 40px; font-size: 20px; }
+      .theme-toggle { top: 10px; right: 10px; }
+      .sound-toggle { top: 60px; right: 10px; }
+      
+      .kbd { font-size: 11px; padding: 3px 6px; }
+    }
+    
+    @media (max-width: 400px) {
+      .card { padding: 12px; }
+      .big { font-size: 64px; }
+      .grid { grid-template-columns: repeat(3, minmax(60px, 1fr)); gap: 8px; }
+      .tile { font-size: 36px; padding: 14px 0; }
+      .pill { font-size: 10px; padding: 4px 7px; }
+    }
     .sound-toggle:hover { transform: scale(1.1); }
     .sound-toggle.muted { background: #999; }
   </style>
