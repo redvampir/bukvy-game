@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Буквенная игра</title>
+  <style>
+    body { font-family: system-ui, Arial; text-align:center; margin:0; padding:24px; background:#fff7e6; transition: background 0.3s ease; }
+    body.dark-theme { background:#1a1a2e; color:#eee; }
+    
+    .card { max-width:860px; margin:0 auto; background:white; border-radius:18px; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,.08); }
+    .dark-theme .card { background:#16213e; box-shadow:0 10px 25px rgba(0,0,0,.3); }
+    
+    h1 { margin: 8px 0 10px; }
+    .big { font-size:92px; margin:10px 0 4px; transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+    .big.bounce { animation: bounce 0.5s ease; }
+    .big.shake { animation: shake 0.4s ease; }
+    
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+    
+    @keyframes confetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+    }
+    
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: #f0f;
+      z-index: 9999;
+      animation: confetti 2s ease-out forwards;
+      pointer-events: none;
+    }
+    
+    .hint { font-size:16px; opacity:.85; margin: 6px 0; }
+    .dark-theme .hint { opacity:.7; }
+    
+    .status { margin-top:10px; font-size:20px; min-height: 28px; font-weight: 500; }
+    
+    button { font-size:18px; padding:12px 16px; border:0; border-radius:12px; background:#ff7a00; color:white; cursor:pointer; transition: all 0.2s ease; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,122,0,0.3); }
+    button.secondary { background:#ffd7b0; color:#4a2a00; }
+    button.secondary:hover { background:#ffcda0; }
+    button:active { transform: scale(0.98); }
+    .row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+
+    .grid { display:grid; grid-template-columns: repeat(5, minmax(64px, 1fr)); gap:12px; margin-top:14px; }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: repeat(3, minmax(80px, 1fr)); gap:16px; }
+      .tile { font-size:48px; padding:24px 0; }
+    }
+    
+    .tile {
+      font-size:42px; padding:18px 0; border-radius:16px; border:2px solid #f2f2f2;
+      background:#fafafa; cursor:pointer; user-select:none;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+    .dark-theme .tile { background:#0f3460; border-color:#1a4d7a; color:#fff; }
+    .tile:hover { transform: scale(1.05); }
+    .tile:active { transform: scale(0.98); }
+    .tile.good { background:#d9fbe1; border-color:#56c271; animation: pulse 0.3s ease; }
+    .tile.bad { background:#ffe0e0; border-color:#ff6b6b; animation: shake 0.3s ease; }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    .dark-theme .tile.good { background:#1e4d2b; border-color:#56c271; }
+    .dark-theme .tile.bad { background:#4d1e1e; border-color:#ff6b6b; }
+
+    .bar { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; }
+    .pill { background:#f2f2f2; padding:8px 12px; border-radius:999px; font-size:14px; transition: background 0.2s ease; }
+    .dark-theme .pill { background:#0f3460; }
+    select, input[type="checkbox"] { transform: scale(1.1); }
+    .dark-theme select { background:#0f3460; color:#fff; border-color:#1a4d7a; }
+    .kbd { background:#f2f2f2; padding:4px 8px; border-radius:10px; font-weight:700; }
+    .dark-theme .kbd { background:#0f3460; }
+    
+    /* Прогресс-бар */
+    .progress-container { margin: 12px 0; background: #e0e0e0; border-radius: 999px; height: 24px; overflow: hidden; }
+    .dark-theme .progress-container { background: #0f3460; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #56c271, #4caf50); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
+    
+    /* Достижения */
+    .achievements { display: flex; gap: 8px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+    .achievement { font-size: 32px; opacity: 0.3; transition: all 0.3s ease; filter: grayscale(100%); }
+    .achievement.unlocked { opacity: 1; filter: grayscale(0%); animation: pop 0.5s ease; }
+    
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+    
+    /* История */
+    .history { margin: 12px 0; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .history-item { font-size: 24px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #f2f2f2; }
+    .dark-theme .history-item { border-color: #1a4d7a; background: #0f3460; }
+    .history-item.correct { background: #d9fbe1; border-color: #56c271; }
+    .history-item.incorrect { background: #ffe0e0; border-color: #ff6b6b; }
+    .dark-theme .history-item.correct { background: #1e4d2b; }
+    .dark-theme .history-item.incorrect { background: #4d1e1e; }
+    
+    /* Переключатель темы */
+    .theme-toggle { position: fixed; top: 20px; right: 20px; background: #ff7a00; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
+    .theme-toggle:hover { transform: scale(1.1); }
+    .dark-theme .theme-toggle { background: #ffd700; }
+    
+    /* Звуковые эффекты индикатор */
+    .sound-toggle { position: fixed; top: 80px; right: 20px; background: #4caf50; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
+    .sound-toggle:hover { transform: scale(1.1); }
+    .sound-toggle.muted { background: #999; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle">🌙</button>
+  <button class="sound-toggle" id="soundToggle">🔊</button>
+  
+  <div class="card">
+    <h1>Нажми букву 🎈</h1>
+    <div class="hint">Игра говорит букву. Ребёнок нажимает её на клавиатуре или по кнопке на экране.</div>
+
+    <div class="big" id="target">—</div>
+    
+    <!-- Достижения -->
+    <div class="achievements" id="achievements">
+      <span class="achievement" data-level="5" title="5 правильных подряд">⭐</span>
+      <span class="achievement" data-level="10" title="10 правильных подряд">🌟</span>
+      <span class="achievement" data-level="20" title="20 правильных подряд">✨</span>
+      <span class="achievement" data-level="50" title="50 правильных подряд">🏆</span>
+    </div>
+    
+    <!-- Прогресс-бар -->
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar" style="width: 0%;">0%</div>
+    </div>
+
+    <div class="bar">
+      <span class="pill">Очки: <b id="score">0</b></span>
+      <span class="pill">Ошибки: <b id="mistakes">0</b></span>
+      <span class="pill">Подряд: <b id="streak">0</b> 🔥</span>
+      <span class="pill">Точность: <b id="accuracy">100%</b></span>
+
+      <span class="pill">
+        Набор:
+        <select id="set">
+          <option value="easy">Лёгкий (А О У М С Т Н К Л Р)</option>
+          <option value="vowels">Только гласные (А О У Ы Э Я Ё Е Ю И)</option>
+          <option value="all">Почти все (АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ)</option>
+        </select>
+      </span>
+
+      <span class="pill">
+        <label>
+          <input type="checkbox" id="soundMode" />
+          Говорить звук (м, с), а не “эм/эс”
+        </label>
+      </span>
+    </div>
+
+    <div class="row">
+      <button id="start">Старт / Повтори</button>
+      <button class="secondary" id="next">Следующая</button>
+      <button class="secondary" id="reset">Сброс</button>
+    </div>
+
+    <div class="status" id="status">Нажми «Старт»</div>
+    
+    <!-- История последних ответов -->
+    <div class="history" id="history"></div>
+
+    <div class="hint">
+      Клавиатура: включи русский расклад. Пробел = повторить.
+      Тренируем: <span class="kbd" id="hintLetters">А О У М С Т Н К Л Р</span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+
+<script>
+  const SETS = {
+    easy: ["А","О","У","М","С","Т","Н","К","Л","Р"],
+    vowels: ["А","О","У","Ы","Э","Я","Ё","Е","Ю","И"],
+    all: "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("")
+  };
+
+  // “Звуки” (чтобы ребёнок слышал М = “м”, С = “с”, а не “эм/эс”)
+  // Для гласных оставляем как есть.
+  const SOUND = {
+    "Б":"б","В":"в","Г":"г","Д":"д","Ж":"ж","З":"з","Й":"й","К":"к","Л":"л","М":"м","Н":"н","П":"п","Р":"р","С":"с","Т":"т","Ф":"ф","Х":"х","Ц":"ц","Ч":"ч","Ш":"ш","Щ":"щ"
+  };
+
+  let letters = SETS.easy.slice();
+  let current = null;
+  let score = 0;
+  let mistakes = 0;
+  let streak = 0;
+  let bestStreak = 0;
+  let history = [];
+  let soundEnabled = true;
+
+  const elTarget = document.getElementById("target");
+  const elStatus = document.getElementById("status");
+  const elScore = document.getElementById("score");
+  const elMistakes = document.getElementById("mistakes");
+  const elStreak = document.getElementById("streak");
+  const elAccuracy = document.getElementById("accuracy");
+  const elProgressBar = document.getElementById("progressBar");
+  const elHistory = document.getElementById("history");
+  const elGrid = document.getElementById("grid");
+  const elSet = document.getElementById("set");
+  const elSoundMode = document.getElementById("soundMode");
+  const elHintLetters = document.getElementById("hintLetters");
+  const elThemeToggle = document.getElementById("themeToggle");
+  const elSoundToggle = document.getElementById("soundToggle");
+  const elAchievements = document.getElementById("achievements");
+
+  // ---- Звуковые эффекты ----
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  
+  function playSound(frequency, duration, type = 'sine') {
+    if (!soundEnabled) return;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+  }
+  
+  function playSuccessSound() {
+    playSound(523.25, 0.1); // C5
+    setTimeout(() => playSound(659.25, 0.1), 100); // E5
+    setTimeout(() => playSound(783.99, 0.15), 200); // G5
+  }
+  
+  function playErrorSound() {
+    playSound(200, 0.2, 'sawtooth');
+  }
+  
+  function playAchievementSound() {
+    playSound(523.25, 0.1);
+    setTimeout(() => playSound(659.25, 0.1), 80);
+    setTimeout(() => playSound(783.99, 0.1), 160);
+    setTimeout(() => playSound(1046.50, 0.2), 240); // C6
+  }
+
+  // ---- Speech (улучшенная версия) ----
+  let cachedRuVoice = null;
+  let isSpeaking = false;
+  let speechQueue = [];
+
+  function loadVoices() {
+    const voices = speechSynthesis.getVoices();
+    // Ищем лучшие русские голоса в порядке приоритета
+    const preferredVoices = [
+      'Microsoft Irina Desktop - Russian',
+      'Microsoft Pavel - Russian (Russia)',
+      'Google русский',
+      'Yandex Russian',
+      'ru-RU'
+    ];
+    
+    for (let pref of preferredVoices) {
+      const voice = voices.find(v => v.name.includes(pref) || v.lang.includes('ru'));
+      if (voice) {
+        cachedRuVoice = voice;
+        break;
+      }
+    }
+    
+    // Если не нашли, берем любой русский
+    if (!cachedRuVoice) {
+      cachedRuVoice = voices.find(v => (v.lang || "").toLowerCase().startsWith("ru")) || null;
+    }
+  }
+  
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+
+  function say(text, priority = false) {
+    if (priority) {
+      // Прерываем текущую озвучку для срочного сообщения
+      speechSynthesis.cancel();
+      speechQueue = [];
+      isSpeaking = false;
+    }
+    
+    // Добавляем в очередь
+    speechQueue.push(text);
+    
+    // Если не говорим сейчас, начинаем
+    if (!isSpeaking) {
+      processQueue();
+    }
+  }
+  
+  function processQueue() {
+    if (speechQueue.length === 0) {
+      isSpeaking = false;
+      return;
+    }
+    
+    isSpeaking = true;
+    const text = speechQueue.shift();
+    
+    // Останавливаем предыдущую озвучку
+    speechSynthesis.cancel();
+    
+    // Небольшая задержка перед новой озвучкой для четкости
+    setTimeout(() => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ru-RU";
+      u.rate = 0.85; // Медленнее для лучшей четкости
+      u.pitch = 1.1;
+      u.volume = 1.0;
+      
+      if (cachedRuVoice) {
+        u.voice = cachedRuVoice;
+      }
+      
+      // Обработчики событий
+      u.onend = () => {
+        isSpeaking = false;
+        // Пауза между фразами
+        setTimeout(() => processQueue(), 300);
+      };
+      
+      u.onerror = (e) => {
+        console.error('Speech error:', e);
+        isSpeaking = false;
+        setTimeout(() => processQueue(), 100);
+      };
+      
+      speechSynthesis.speak(u);
+    }, 150);
+  }
+
+  function setStatus(text) {
+    elStatus.textContent = text;
+  }
+
+  function updateCounters() {
+    elScore.textContent = String(score);
+    elMistakes.textContent = String(mistakes);
+    elStreak.textContent = String(streak);
+    
+    // Обновляем точность
+    const total = score + mistakes;
+    const accuracy = total > 0 ? Math.round((score / total) * 100) : 100;
+    elAccuracy.textContent = accuracy + '%';
+    
+    // Обновляем прогресс-бар (до следующего достижения)
+    const nextMilestone = streak < 5 ? 5 : streak < 10 ? 10 : streak < 20 ? 20 : 50;
+    const progress = Math.min((streak / nextMilestone) * 100, 100);
+    elProgressBar.style.width = progress + '%';
+    elProgressBar.textContent = `${streak}/${nextMilestone}`;
+    
+    // Проверяем достижения
+    checkAchievements();
+  }
+  
+  function checkAchievements() {
+    const achievements = elAchievements.querySelectorAll('.achievement');
+    achievements.forEach(achievement => {
+      const level = parseInt(achievement.dataset.level);
+      if (streak >= level && !achievement.classList.contains('unlocked')) {
+        achievement.classList.add('unlocked');
+        playAchievementSound();
+        createConfetti();
+        
+        const messages = {
+          5: "🎉 Отлично! 5 подряд!",
+          10: "🌟 Супер! 10 подряд!",
+          20: "✨ Фантастика! 20 подряд!",
+          50: "🏆 Чемпион! 50 подряд!"
+        };
+        
+        if (messages[level]) {
+          setTimeout(() => {
+            setStatus(messages[level]);
+            say(messages[level].replace(/[🎉🌟✨🏆]/g, ''));
+          }, 300);
+        }
+      }
+    });
+  }
+  
+  function createConfetti() {
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe'];
+    for (let i = 0; i < 30; i++) {
+      setTimeout(() => {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * window.innerWidth + 'px';
+        confetti.style.top = '0px';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDuration = (1 + Math.random()) + 's';
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 2500);
+      }, i * 30);
+    }
+  }
+  
+  function updateHistory(letter, isCorrect) {
+    history.unshift({ letter, isCorrect });
+    if (history.length > 7) history.pop();
+    
+    elHistory.innerHTML = '';
+    history.forEach(item => {
+      const div = document.createElement('div');
+      div.className = `history-item ${item.isCorrect ? 'correct' : 'incorrect'}`;
+      div.textContent = item.letter;
+      elHistory.appendChild(div);
+    });
+  }
+
+  function buildGrid() {
+    elGrid.innerHTML = "";
+    letters.forEach(L => {
+      const d = document.createElement("div");
+      d.className = "tile";
+      d.textContent = L;
+      d.dataset.letter = L;
+      d.addEventListener("click", () => handleAnswer(L, d));
+      elGrid.appendChild(d);
+    });
+    elHintLetters.textContent = letters.join(" ");
+  }
+
+  function pick() {
+    current = letters[Math.floor(Math.random() * letters.length)];
+    elTarget.textContent = current;
+    
+    // Добавляем анимацию появления буквы
+    elTarget.classList.remove('bounce', 'shake');
+    setTimeout(() => elTarget.classList.add('bounce'), 10);
+
+    const useSound = elSoundMode.checked;
+    const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+    say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+
+    setStatus("Слушай и выбирай 🙂");
+    clearTileMarks();
+  }
+
+  function clearTileMarks() {
+    [...document.querySelectorAll(".tile")].forEach(t => t.classList.remove("good","bad"));
+  }
+
+  function flashTile(tile, ok) {
+    tile.classList.remove("good","bad");
+    tile.classList.add(ok ? "good" : "bad");
+    setTimeout(() => tile.classList.remove("good","bad"), 350);
+  }
+
+  function handleAnswer(pressed, tileEl=null) {
+    if (!current) return;
+
+    const pressedUp = (pressed || "").toUpperCase();
+    const ok = (pressedUp === current);
+
+    if (ok) {
+      score += 1;
+      streak += 1;
+      if (streak > bestStreak) bestStreak = streak;
+      
+      updateCounters();
+      updateHistory(current, true);
+      
+      playSuccessSound();
+      
+      const praises = [
+        "✅ Ура! Правильно!",
+        "🎯 Точно! Молодец!",
+        "⭐ Отлично! Супер!",
+        "👍 Браво! Здорово!",
+        "🌟 Умница! Так держать!"
+      ];
+      const praise = praises[Math.floor(Math.random() * praises.length)];
+      setStatus(praise);
+      say(praise.replace(/[✅🎯⭐👍🌟]/g, ''));
+      
+      if (tileEl) flashTile(tileEl, true);
+      
+      // Анимация буквы при успехе
+      elTarget.classList.remove('bounce', 'shake');
+      elTarget.classList.add('bounce');
+
+      // следующая буква
+      setTimeout(pick, 650);
+    } else {
+      mistakes += 1;
+      streak = 0;
+      updateCounters();
+      updateHistory(pressedUp, false);
+      
+      playErrorSound();
+      
+      // Анимация встряхивания при ошибке
+      elTarget.classList.remove('bounce', 'shake');
+      elTarget.classList.add('shake');
+
+      if (pressedUp.length === 1) {
+        setStatus(`❌ Это «${pressedUp}». Слушай ещё раз!`);
+        const useSound = elSoundMode.checked;
+        const need = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+        const got  = useSound ? (SOUND[pressedUp] || pressedUp.toLowerCase()) : pressedUp;
+        say(`Это ${useSound ? "звук" : "буква"} ${got}. Нужна ${useSound ? "звук" : "буква"} ${need}`);
+      }
+
+      if (tileEl) flashTile(tileEl, false);
+    }
+  }
+
+  // ---- UI handlers ----
+  document.getElementById("start").addEventListener("click", () => {
+    // первый клик “разрешает” озвучку
+    if (!current) {
+      buildGrid();
+      pick();
+    } else {
+      const useSound = elSoundMode.checked;
+      const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+      say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+    }
+  });
+
+  document.getElementById("next").addEventListener("click", () => {
+    if (!current) buildGrid();
+    pick();
+  });
+
+  document.getElementById("reset").addEventListener("click", () => {
+    score = 0; 
+    mistakes = 0; 
+    streak = 0;
+    bestStreak = 0;
+    history = [];
+    
+    updateCounters();
+    elHistory.innerHTML = '';
+    elProgressBar.style.width = '0%';
+    elProgressBar.textContent = '0%';
+    
+    // Сбрасываем достижения
+    elAchievements.querySelectorAll('.achievement').forEach(a => a.classList.remove('unlocked'));
+    
+    current = null;
+    elTarget.textContent = "—";
+    setStatus("Нажми «Старт»");
+    clearTileMarks();
+  });
+
+  elSet.addEventListener("change", () => {
+    letters = SETS[elSet.value].slice();
+    buildGrid();
+    if (current) pick();
+  });
+
+  elSoundMode.addEventListener("change", () => {
+    if (current) {
+      const useSound = elSoundMode.checked;
+      const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+      say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+    }
+  });
+
+  // клавиатура + пробел для повтора
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      if (current) {
+        const useSound = elSoundMode.checked;
+        const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+        say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+      }
+      return;
+    }
+    if (!current) return;
+
+    const pressed = (e.key || "").toUpperCase();
+    if (pressed.length !== 1) return;
+
+    // подсветим соответствующую плитку, если есть
+    const tile = [...document.querySelectorAll(".tile")].find(t => t.dataset.letter === pressed) || null;
+    handleAnswer(pressed, tile);
+  });
+  
+  // Темная тема
+  elThemeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-theme');
+    elThemeToggle.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
+    localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+  });
+  
+  // Восстанавливаем тему
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark-theme');
+    elThemeToggle.textContent = '☀️';
+  }
+  
+  // Переключатель звука
+  elSoundToggle.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    elSoundToggle.classList.toggle('muted');
+    elSoundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+    localStorage.setItem('sound', soundEnabled ? 'on' : 'off');
+  });
+  
+  // Восстанавливаем настройку звука
+  if (localStorage.getItem('sound') === 'off') {
+    soundEnabled = false;
+    elSoundToggle.classList.add('muted');
+    elSoundToggle.textContent = '🔇';
+  }
+
+  // начальная отрисовка
+  buildGrid();
+  updateCounters();
+</script>
+</body>
+</html>
