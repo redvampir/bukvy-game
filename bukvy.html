@@ -78,12 +78,14 @@
     .bar { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; }
     .pill { background:#f2f2f2; padding:6px 10px; border-radius:999px; font-size:13px; transition: background 0.2s ease; white-space: nowrap; }
     .dark-theme .pill { background:#0f3460; }
-    select { transform: scale(1.05); transform-origin: left center; }
-    input[type="checkbox"] { width: 18px; height: 18px; margin: 0; vertical-align: middle; accent-color: #ff7a00; }
+    select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 13px; }
+    input[type="checkbox"] { width: 18px; height: 18px; margin: 0; vertical-align: middle; accent-color: #ff7a00; cursor: pointer; }
     .dark-theme select { background:#0f3460; color:#fff; border-color:#1a4d7a; }
     .kbd { background:#f2f2f2; padding:4px 8px; border-radius:10px; font-weight:700; }
     .dark-theme .kbd { background:#0f3460; }
 
+    .select-pill { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .select-pill div { font-size: 11px; }
     .toggle-pill { white-space: normal; }
     .toggle-label { display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: left; line-height: 1.2; cursor: pointer; }
     .toggle-label input[type="checkbox"] { flex: 0 0 auto; }
@@ -143,8 +145,15 @@
       .status { font-size: 16px; }
       
       .bar { gap: 6px; margin-top: 8px; }
-      .pill { padding: 5px 8px; font-size: 11px; }
-      select { font-size: 11px; }
+      .pill { padding: 8px 10px; font-size: 12px; white-space: normal; text-align: center; }
+      select { font-size: 12px; padding: 6px; width: 100%; max-width: 100%; transform: none; }
+      
+      .select-pill { flex: 1 1 100%; max-width: 100%; }
+      .select-pill select { margin-top: 4px; }
+      
+      .toggle-pill { flex: 1 1 100%; max-width: 100%; }
+      .toggle-label { font-size: 11px; justify-content: center; gap: 6px; }
+      input[type="checkbox"] { width: 18px; height: 18px; }
       
       button { font-size: 14px; padding: 8px 12px; }
       .row { gap: 6px; }
@@ -210,12 +219,12 @@
       <span class="pill">Подряд: <b id="streak">0</b> 🔥</span>
       <span class="pill">Точность: <b id="accuracy">100%</b></span>
 
-      <span class="pill">
-        Набор:
+      <span class="pill select-pill">
+        <div>Набор:</div>
         <select id="set">
-          <option value="easy">Лёгкий (А О У М С Т Н К Л Р)</option>
-          <option value="vowels">Только гласные (А О У Ы Э Я Ё Е Ю И)</option>
-          <option value="all">Почти все (АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ)</option>
+          <option value="easy">Лёгкий</option>
+          <option value="vowels">Гласные</option>
+          <option value="all">Все буквы</option>
         </select>
       </span>
 
