@@ -40,11 +40,12 @@ def test_mobile_elements_fit():
             card_width = card_box['width']
             padding = 20
 
-            # Проверяем селект
-            select_el = page.query_selector('#set')
-            select_box = select_el.bounding_box()
-            assert select_box['width'] <= card_width - padding, \
-                f"Select выходит за границы: {select_box['width']} > {card_width - padding}"
+            # Проверяем переключатель набора
+            set_toggle = page.query_selector('#setToggle')
+            assert set_toggle is not None, "Set toggle element #setToggle not found"
+            set_toggle_box = set_toggle.bounding_box()
+            assert set_toggle_box['width'] <= card_width - padding, \
+                f"Переключатель набора выходит за границы: {set_toggle_box['width']} > {card_width - padding}"
 
             # Проверяем чекбокс и его label
             checkbox_pill = page.query_selector('.toggle-pill')

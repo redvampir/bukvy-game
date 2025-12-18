@@ -102,6 +102,46 @@
 
     .select-pill { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .select-pill div { font-size: 11px; }
+    .set-toggle { display: flex; gap: 6px; width: 100%; justify-content: center; flex-wrap: wrap; }
+    .set-radio {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .set-btn {
+      flex: 1 1 auto;
+      min-width: 90px;
+      min-height: 36px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      background: white;
+      color: #4a2a00;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .set-radio:checked + .set-btn {
+      background: #ff7a00;
+      color: white;
+      border-color: #ff7a00;
+    }
+    .set-radio:focus-visible + .set-btn {
+      outline: 3px solid #ff7a00;
+      outline-offset: 2px;
+    }
+    .dark-theme .set-btn { background: #0f3460; border-color: #1a4d7a; color: #fff; }
+    .dark-theme .set-radio:checked + .set-btn { background: #ffd700; border-color: #ffd700; color: #1a1a2e; }
     .toggle-pill { white-space: normal; }
     .toggle-label { display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: left; line-height: 1.2; cursor: pointer; }
     .toggle-label input[type="checkbox"] { flex: 0 0 auto; }
@@ -169,7 +209,8 @@
       select { font-size: 12px; padding: 10px 12px; width: 100%; max-width: 100%; transform: none; min-height: 40px; }
       
       .select-pill { flex: 1 1 100%; max-width: 100%; }
-      .select-pill select { margin-top: 4px; }
+      .set-toggle { gap: 6px; }
+      .set-btn { min-width: 0; flex: 1 1 30%; min-height: 40px; font-size: 12px; padding: 10px 10px; }
       
       .toggle-pill { flex: 1 1 100%; max-width: 100%; }
       .toggle-label { font-size: 11px; justify-content: center; gap: 6px; }
@@ -240,11 +281,16 @@
 
       <span class="pill select-pill">
         <div>Набор:</div>
-        <select id="set">
-          <option value="easy">Лёгкий</option>
-          <option value="vowels">Гласные</option>
-          <option value="all">Все буквы</option>
-        </select>
+        <div class="set-toggle" id="setToggle" role="radiogroup" aria-label="Набор букв">
+          <input class="set-radio" type="radio" name="set" id="set-easy" value="easy" checked>
+          <label class="set-btn" for="set-easy">Лёгкий</label>
+
+          <input class="set-radio" type="radio" name="set" id="set-vowels" value="vowels">
+          <label class="set-btn" for="set-vowels">Гласные</label>
+
+          <input class="set-radio" type="radio" name="set" id="set-all" value="all">
+          <label class="set-btn" for="set-all">Все буквы</label>
+        </div>
       </span>
 
       <span class="pill toggle-pill">
@@ -305,7 +351,7 @@
   const elProgressBar = document.getElementById("progressBar");
   const elHistory = document.getElementById("history");
   const elGrid = document.getElementById("grid");
-  const elSet = document.getElementById("set");
+  const elSetToggle = document.getElementById("setToggle");
   const elSoundMode = document.getElementById("soundMode");
   const elHintLetters = document.getElementById("hintLetters");
   const elThemeToggle = document.getElementById("themeToggle");
@@ -659,10 +705,16 @@
     clearTileMarks();
   });
 
-  elSet.addEventListener("change", () => {
-    letters = SETS[elSet.value].slice();
+  function applySet(value) {
+    letters = SETS[value].slice();
     buildGrid();
     if (current) pick();
+  }
+
+  elSetToggle.addEventListener('change', (e) => {
+    const input = e.target.closest('input[type="radio"][name="set"]');
+    if (!input) return;
+    applySet(input.value);
   });
 
   elSoundMode.addEventListener("change", () => {

@@ -33,12 +33,12 @@ def test_select_fits_mobile():
             context = browser.new_context(viewport={"width": 360, "height": 800}, is_mobile=True)
             page = context.new_page()
             page.goto(url, timeout=10000)
-            page.wait_for_selector('#set')
+            page.wait_for_selector('#setToggle')
 
             # get bounding boxes
-            select_el = page.query_selector('#set')
+            select_el = page.query_selector('#setToggle')
             card_el = page.query_selector('.card')
-            assert select_el is not None, "Select element #set not found"
+            assert select_el is not None, "Set toggle element #setToggle not found"
             assert card_el is not None, "Card element .card not found"
 
             select_box = select_el.bounding_box()
@@ -50,7 +50,7 @@ def test_select_fits_mobile():
             # Allow small padding tolerance
             padding_tolerance = 8
             assert select_box['width'] <= card_box['width'] - padding_tolerance, \
-                f"Select is too wide on mobile: select.width={select_box['width']} card.width={card_box['width']}"
+                f"Set toggle is too wide on mobile: toggle.width={select_box['width']} card.width={card_box['width']}"
 
             context.close()
             browser.close()

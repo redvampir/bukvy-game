@@ -139,10 +139,11 @@ def test_difficulty_change():
             browser = p.chromium.launch()
             page = browser.new_page()
             page.goto(url, timeout=10000)
-            page.wait_for_selector('#set')
+            page.wait_for_selector('#setToggle')
 
             # Меняем на гласные
-            page.select_option('#set', 'vowels')
+            page.click('label[for="set-vowels"]')
+            assert page.locator('#set-vowels').is_checked(), "Радио 'Гласные' должно быть выбрано"
             time.sleep(0.2)
 
             # Проверяем что подсказка обновилась
@@ -150,7 +151,8 @@ def test_difficulty_change():
             assert 'А' in hint_text, "Должна быть буква А в подсказке"
 
             # Меняем на все буквы
-            page.select_option('#set', 'all')
+            page.click('label[for="set-all"]')
+            assert page.locator('#set-all').is_checked(), "Радио 'Все буквы' должно быть выбрано"
             time.sleep(0.2)
 
             hint_text_all = page.locator('#hintLetters').inner_text()
