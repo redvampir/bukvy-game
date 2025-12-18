@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Pytest
+.pytest_cache/
+
+# Playwright
+playwright-report/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

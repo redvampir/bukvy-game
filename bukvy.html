@@ -5,7 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Буквенная игра</title>
   <style>
-    body { font-family: system-ui, Arial; text-align:center; margin:0; padding:16px; background:#fff7e6; transition: background 0.3s ease; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, Arial;
+      text-align:center;
+      margin:0;
+      padding: 16px;
+      padding-top: calc(16px + env(safe-area-inset-top));
+      padding-right: calc(16px + env(safe-area-inset-right));
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding-left: calc(16px + env(safe-area-inset-left));
+      background:#fff7e6;
+      transition: background 0.3s ease;
+    }
     body.dark-theme { background:#1a1a2e; color:#eee; }
     
     .card { max-width:860px; margin:0 auto; background:white; border-radius:18px; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,.08); }
@@ -48,11 +60,16 @@
     .status { margin-top:10px; font-size:18px; min-height: 28px; font-weight: 500; }
     
     button { font-size:16px; padding:10px 14px; border:0; border-radius:12px; background:#ff7a00; color:white; cursor:pointer; transition: all 0.2s ease; }
-    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,122,0,0.3); }
     button.secondary { background:#ffd7b0; color:#4a2a00; }
-    button.secondary:hover { background:#ffcda0; }
     button:active { transform: scale(0.98); }
     .row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+
+    @media (hover: hover) and (pointer: fine) {
+      button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,122,0,0.3); }
+      button.secondary:hover { background:#ffcda0; }
+      .tile:hover { transform: scale(1.05); }
+      .theme-toggle:hover, .sound-toggle:hover { transform: scale(1.1); }
+    }
 
     .grid { display:grid; grid-template-columns: repeat(5, minmax(64px, 1fr)); gap:12px; margin-top:14px; }
     
@@ -62,7 +79,6 @@
       transition: transform .05s ease, background .15s ease, border-color .15s ease;
     }
     .dark-theme .tile { background:#0f3460; border-color:#1a4d7a; color:#fff; }
-    .tile:hover { transform: scale(1.05); }
     .tile:active { transform: scale(0.98); }
     .tile.good { background:#d9fbe1; border-color:#56c271; animation: pulse 0.3s ease; }
     .tile.bad { background:#ffe0e0; border-color:#ff6b6b; animation: shake 0.3s ease; }
@@ -78,7 +94,7 @@
     .bar { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; }
     .pill { background:#f2f2f2; padding:6px 10px; border-radius:999px; font-size:13px; transition: background 0.2s ease; white-space: nowrap; }
     .dark-theme .pill { background:#0f3460; }
-    select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 13px; }
+    select { padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 13px; max-width: 100%; }
     input[type="checkbox"] { width: 18px; height: 18px; margin: 0; vertical-align: middle; accent-color: #ff7a00; cursor: pointer; }
     .dark-theme select { background:#0f3460; color:#fff; border-color:#1a4d7a; }
     .kbd { background:#f2f2f2; padding:4px 8px; border-radius:10px; font-weight:700; }
@@ -126,18 +142,22 @@
     .dark-theme .history-item.incorrect { background: #4d1e1e; }
     
     /* Переключатель темы */
-    .theme-toggle { position: fixed; top: 15px; right: 15px; background: #ff7a00; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
-    .theme-toggle:hover { transform: scale(1.1); }
+    .theme-toggle { position: fixed; top: calc(15px + env(safe-area-inset-top)); right: calc(15px + env(safe-area-inset-right)); background: #ff7a00; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
     .dark-theme .theme-toggle { background: #ffd700; }
     
     /* Звуковые эффекты индикатор */
-    .sound-toggle { position: fixed; top: 70px; right: 15px; background: #4caf50; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
-    .sound-toggle:hover { transform: scale(1.1); }
+    .sound-toggle { position: fixed; top: calc(70px + env(safe-area-inset-top)); right: calc(15px + env(safe-area-inset-right)); background: #4caf50; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 1000; }
     .sound-toggle.muted { background: #999; }
     
     /* Мобильная адаптация */
     @media (max-width: 600px) {
-      body { padding: 12px; }
+      body {
+        padding: 12px;
+        padding-top: calc(12px + env(safe-area-inset-top));
+        padding-right: calc(12px + env(safe-area-inset-right));
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        padding-left: calc(12px + env(safe-area-inset-left));
+      }
       .card { padding: 14px; border-radius: 14px; }
       h1 { font-size: 24px; margin: 6px 0 8px; }
       .big { font-size: 72px; }
@@ -146,7 +166,7 @@
       
       .bar { gap: 6px; margin-top: 8px; }
       .pill { padding: 8px 10px; font-size: 12px; white-space: normal; text-align: center; }
-      select { font-size: 12px; padding: 6px; width: 100%; max-width: 100%; transform: none; }
+      select { font-size: 12px; padding: 10px 12px; width: 100%; max-width: 100%; transform: none; min-height: 40px; }
       
       .select-pill { flex: 1 1 100%; max-width: 100%; }
       .select-pill select { margin-top: 4px; }
@@ -155,7 +175,7 @@
       .toggle-label { font-size: 11px; justify-content: center; gap: 6px; }
       input[type="checkbox"] { width: 18px; height: 18px; }
       
-      button { font-size: 14px; padding: 8px 12px; }
+      button { font-size: 14px; padding: 10px 12px; min-height: 40px; }
       .row { gap: 6px; }
       
       .grid { grid-template-columns: repeat(3, minmax(70px, 1fr)); gap: 10px; margin-top: 12px; }
@@ -171,8 +191,8 @@
       .history-item { font-size: 18px; width: 32px; height: 32px; }
       
       .theme-toggle, .sound-toggle { width: 40px; height: 40px; font-size: 20px; }
-      .theme-toggle { top: 10px; right: 10px; }
-      .sound-toggle { top: 60px; right: 10px; }
+      .theme-toggle { top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
+      .sound-toggle { top: calc(60px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
       
       .kbd { font-size: 11px; padding: 3px 6px; }
       input[type="checkbox"] { width: 20px; height: 20px; }
@@ -186,7 +206,6 @@
       .tile { font-size: 36px; padding: 14px 0; }
       .pill { font-size: 10px; padding: 4px 7px; }
     }
-    .sound-toggle:hover { transform: scale(1.1); }
     .sound-toggle.muted { background: #999; }
   </style>
 </head>
