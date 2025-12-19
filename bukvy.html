@@ -100,9 +100,9 @@
     .kbd { background:#f2f2f2; padding:4px 8px; border-radius:10px; font-weight:700; }
     .dark-theme .kbd { background:#0f3460; }
 
-    .select-pill { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .select-pill { display: flex; flex-direction: column; align-items: center; gap: 4px; white-space: normal; }
     .select-pill div { font-size: 11px; }
-    .set-toggle { display: flex; gap: 6px; width: 100%; justify-content: center; flex-wrap: wrap; }
+    .set-toggle { display: flex; gap: 6px; width: 100%; justify-content: center; flex-wrap: wrap; max-width: 100%; }
     .set-radio {
       position: absolute;
       width: 1px;
@@ -208,9 +208,9 @@
       .pill { padding: 8px 10px; font-size: 12px; white-space: normal; text-align: center; }
       select { font-size: 12px; padding: 10px 12px; width: 100%; max-width: 100%; transform: none; min-height: 40px; }
       
-      .select-pill { flex: 1 1 100%; max-width: 100%; }
-      .set-toggle { gap: 6px; }
-      .set-btn { min-width: 0; flex: 1 1 30%; min-height: 40px; font-size: 12px; padding: 10px 10px; }
+      .select-pill { flex: 1 1 100%; max-width: 100%; white-space: normal; }
+      .set-toggle { gap: 6px; width: 100%; }
+      .set-btn { min-width: 0; flex: 1 1 calc(33.333% - 4px); min-height: 40px; font-size: 11px; padding: 10px 6px; }
       
       .toggle-pill { flex: 1 1 100%; max-width: 100%; }
       .toggle-label { font-size: 11px; justify-content: center; gap: 6px; }
