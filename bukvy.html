@@ -333,6 +333,15 @@
     "Б":"б","В":"в","Г":"г","Д":"д","Ж":"ж","З":"з","Й":"й","К":"к","Л":"л","М":"м","Н":"н","П":"п","Р":"р","С":"с","Т":"т","Ф":"ф","Х":"х","Ц":"ц","Ч":"ч","Ш":"ш","Щ":"щ"
   };
 
+  // Нормализует букву для озвучки (учитывает «звук» режим и особенности произношения)
+  function spokenLetter(letter) {
+    if (!letter) return "";
+    if (SOUND[letter]) return SOUND[letter];
+    // Для буквы О используем ударный символ, чтобы TTS произнёс «о», а не редуцированное «а»
+    if (letter === "О") return "о\u0301"; // о́ (о с ударением)
+    return letter.toLowerCase();
+  }
+
   let letters = SETS.easy.slice();
   let current = null;
   let score = 0;
@@ -590,7 +599,7 @@
     setTimeout(() => elTarget.classList.add('bounce'), 10);
 
     const useSound = elSoundMode.checked;
-    const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+    const spoken = useSound ? spokenLetter(current) : current;
     say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
 
     setStatus("Слушай и выбирай 🙂");
@@ -657,8 +666,8 @@
       if (pressedUp.length === 1) {
         setStatus(`❌ Это «${pressedUp}». Слушай ещё раз!`);
         const useSound = elSoundMode.checked;
-        const need = useSound ? (SOUND[current] || current.toLowerCase()) : current;
-        const got  = useSound ? (SOUND[pressedUp] || pressedUp.toLowerCase()) : pressedUp;
+        const need = useSound ? spokenLetter(current) : current;
+        const got  = useSound ? spokenLetter(pressedUp) : pressedUp;
         say(`Это ${useSound ? "звук" : "буква"} ${got}. Нужна ${useSound ? "звук" : "буква"} ${need}`);
       }
 
@@ -674,7 +683,7 @@
       pick();
     } else {
       const useSound = elSoundMode.checked;
-      const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+      const spoken = useSound ? spokenLetter(current) : current;
       say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
     }
   });
@@ -720,7 +729,7 @@
   elSoundMode.addEventListener("change", () => {
     if (current) {
       const useSound = elSoundMode.checked;
-      const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+      const spoken = useSound ? spokenLetter(current) : current;
       say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
     }
   });
@@ -731,7 +740,7 @@
       e.preventDefault();
       if (current) {
         const useSound = elSoundMode.checked;
-        const spoken = useSound ? (SOUND[current] || current.toLowerCase()) : current;
+        const spoken = useSound ? spokenLetter(current) : current;
         say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
       }
       return;
