@@ -293,6 +293,11 @@
         </div>
       </div>
 
+      <div class="pill select-pill">
+        <div>Голос:</div>
+        <select id="voiceSelect" aria-label="Выбор голоса"></select>
+      </div>
+
       <span class="pill toggle-pill">
         <label class="toggle-label">
           <input type="checkbox" id="soundMode" />
@@ -337,8 +342,8 @@
   function spokenLetter(letter) {
     if (!letter) return "";
     if (SOUND[letter]) return SOUND[letter];
-    // Для буквы О используем ударный символ, чтобы TTS произнёс «о», а не редуцированное «а»
-    if (letter === "О") return "о\u0301"; // о́ (о с ударением)
+    // Для буквы О используем заглавную форму, чтобы TTS воспринимал её как название буквы.
+    if (letter === "О") return "О";
     return letter.toLowerCase();
   }
 
@@ -366,6 +371,7 @@
   const elThemeToggle = document.getElementById("themeToggle");
   const elSoundToggle = document.getElementById("soundToggle");
   const elAchievements = document.getElementById("achievements");
+  const elVoiceSelect = document.getElementById("voiceSelect");
 
   // ---- Звуковые эффекты ----
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -407,31 +413,84 @@
 
   // ---- Speech (улучшенная версия) ----
   let cachedRuVoice = null;
+  let availableVoices = [];
   let isSpeaking = false;
   let speechQueue = [];
 
-  function loadVoices() {
-    const voices = speechSynthesis.getVoices();
-    // Ищем лучшие русские голоса в порядке приоритета
-    const preferredVoices = [
-      'Microsoft Irina Desktop - Russian',
-      'Microsoft Pavel - Russian (Russia)',
-      'Google русский',
-      'Yandex Russian',
-      'ru-RU'
-    ];
-    
-    for (let pref of preferredVoices) {
-      const voice = voices.find(v => v.name.includes(pref) || v.lang.includes('ru'));
-      if (voice) {
-        cachedRuVoice = voice;
-        break;
+  function isRuVoice(voice) {
+    return (voice.lang || "").toLowerCase().startsWith("ru");
+  }
+
+  function voiceScore(voice) {
+    const name = (voice.name || "").toLowerCase();
+    const lang = (voice.lang || "").toLowerCase();
+    let score = 0;
+
+    if (lang.startsWith("ru")) score += 50;
+    if (name.includes("google")) score += 30;
+    if (name.includes("yandex")) score += 25;
+    if (name.includes("irina")) score += 20;
+    if (name.includes("pavel")) score += 18;
+    if (name.includes("dmitry")) score += 12;
+    if (name.includes("elena")) score += 12;
+    if (name.includes("neural") || name.includes("natural")) score += 20;
+    if (name.includes("premium")) score += 10;
+    if (voice.default) score += 5;
+
+    return score;
+  }
+
+  function pickBestVoice(voices) {
+    if (!voices.length) return null;
+    let best = voices[0];
+    let bestScore = voiceScore(best);
+    for (let i = 1; i < voices.length; i++) {
+      const score = voiceScore(voices[i]);
+      if (score > bestScore) {
+        best = voices[i];
+        bestScore = score;
       }
     }
-    
-    // Если не нашли, берем любой русский
-    if (!cachedRuVoice) {
-      cachedRuVoice = voices.find(v => (v.lang || "").toLowerCase().startsWith("ru")) || null;
+    return best;
+  }
+
+  function loadVoices() {
+    const voices = speechSynthesis.getVoices() || [];
+    availableVoices = voices.slice();
+
+    const ruVoices = voices.filter(isRuVoice);
+    const selectVoices = ruVoices.length ? ruVoices : voices;
+
+    if (!selectVoices.length) {
+      elVoiceSelect.innerHTML = '<option value="">Загрузка голосов...</option>';
+      elVoiceSelect.disabled = true;
+      cachedRuVoice = null;
+      return;
+    }
+
+    elVoiceSelect.disabled = false;
+    elVoiceSelect.innerHTML = "";
+    selectVoices.forEach(voice => {
+      const opt = document.createElement("option");
+      opt.value = voice.name;
+      opt.textContent = `${voice.name}${voice.lang ? " (" + voice.lang + ")" : ""}`;
+      elVoiceSelect.appendChild(opt);
+    });
+
+    const savedName = localStorage.getItem("voice");
+    let selected = null;
+    if (savedName) {
+      selected = selectVoices.find(v => v.name === savedName) ||
+        voices.find(v => v.name === savedName) || null;
+    }
+
+    if (!selected) {
+      selected = pickBestVoice(selectVoices);
+    }
+
+    cachedRuVoice = selected || null;
+    if (cachedRuVoice) {
+      elVoiceSelect.value = cachedRuVoice.name;
     }
   }
   
@@ -731,6 +790,15 @@
       const useSound = elSoundMode.checked;
       const spoken = useSound ? spokenLetter(current) : current;
       say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+    }
+  });
+
+  elVoiceSelect.addEventListener("change", () => {
+    const selectedName = elVoiceSelect.value;
+    const voice = availableVoices.find(v => v.name === selectedName) || null;
+    cachedRuVoice = voice;
+    if (selectedName) {
+      localStorage.setItem("voice", selectedName);
     }
   });
 
