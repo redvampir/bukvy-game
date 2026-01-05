@@ -458,10 +458,7 @@
     const voices = speechSynthesis.getVoices() || [];
     availableVoices = voices.slice();
 
-    const ruVoices = voices.filter(isRuVoice);
-    const selectVoices = ruVoices.length ? ruVoices : voices;
-
-    if (!selectVoices.length) {
+    if (!voices.length) {
       elVoiceSelect.innerHTML = '<option value="">Загрузка голосов...</option>';
       elVoiceSelect.disabled = true;
       cachedRuVoice = null;
@@ -470,22 +467,41 @@
 
     elVoiceSelect.disabled = false;
     elVoiceSelect.innerHTML = "";
-    selectVoices.forEach(voice => {
-      const opt = document.createElement("option");
-      opt.value = voice.name;
-      opt.textContent = `${voice.name}${voice.lang ? " (" + voice.lang + ")" : ""}`;
-      elVoiceSelect.appendChild(opt);
-    });
+
+    const ruVoices = voices.filter(isRuVoice);
+    const otherVoices = voices.filter(voice => !isRuVoice(voice));
+
+    const addOptions = (parent, list) => {
+      list.forEach(voice => {
+        const opt = document.createElement("option");
+        opt.value = voice.name;
+        opt.textContent = `${voice.name}${voice.lang ? " (" + voice.lang + ")" : ""}`;
+        parent.appendChild(opt);
+      });
+    };
+
+    if (ruVoices.length && otherVoices.length) {
+      const ruGroup = document.createElement("optgroup");
+      ruGroup.label = "Русские";
+      addOptions(ruGroup, ruVoices);
+      elVoiceSelect.appendChild(ruGroup);
+
+      const otherGroup = document.createElement("optgroup");
+      otherGroup.label = "Другие";
+      addOptions(otherGroup, otherVoices);
+      elVoiceSelect.appendChild(otherGroup);
+    } else {
+      addOptions(elVoiceSelect, voices);
+    }
 
     const savedName = localStorage.getItem("voice");
     let selected = null;
     if (savedName) {
-      selected = selectVoices.find(v => v.name === savedName) ||
-        voices.find(v => v.name === savedName) || null;
+      selected = voices.find(v => v.name === savedName) || null;
     }
 
     if (!selected) {
-      selected = pickBestVoice(selectVoices);
+      selected = pickBestVoice(ruVoices.length ? ruVoices : voices);
     }
 
     cachedRuVoice = selected || null;
@@ -513,6 +529,28 @@
       processQueue();
     }
   }
+
+  function sayPhraseAndLetter(prefix, letter, useSound, priority = false) {
+    if (priority) {
+      say(prefix, true);
+    } else {
+      say(prefix);
+    }
+    const spoken = useSound ? spokenLetter(letter) : letter;
+    if (spoken) {
+      say(spoken);
+    }
+  }
+
+  function sayPrompt(letter, useSound, priority = false) {
+    const prefix = `Нажми ${useSound ? "звук" : "букву"}`;
+    sayPhraseAndLetter(prefix, letter, useSound, priority);
+  }
+
+  function sayCorrection(gotLetter, needLetter, useSound) {
+    sayPhraseAndLetter(`Это ${useSound ? "звук" : "буква"}`, gotLetter, useSound);
+    sayPhraseAndLetter(`Нужна ${useSound ? "звук" : "буква"}`, needLetter, useSound);
+  }
   
   function processQueue() {
     if (speechQueue.length === 0) {
@@ -529,7 +567,7 @@
     // Небольшая задержка перед новой озвучкой для четкости
     setTimeout(() => {
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "ru-RU";
+      u.lang = (cachedRuVoice && cachedRuVoice.lang) ? cachedRuVoice.lang : "ru-RU";
       u.rate = 0.85; // Медленнее для лучшей четкости
       u.pitch = 1.1;
       u.volume = 1.0;
@@ -658,8 +696,7 @@
     setTimeout(() => elTarget.classList.add('bounce'), 10);
 
     const useSound = elSoundMode.checked;
-    const spoken = useSound ? spokenLetter(current) : current;
-    say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+    sayPrompt(current, useSound);
 
     setStatus("Слушай и выбирай 🙂");
     clearTileMarks();
@@ -725,9 +762,7 @@
       if (pressedUp.length === 1) {
         setStatus(`❌ Это «${pressedUp}». Слушай ещё раз!`);
         const useSound = elSoundMode.checked;
-        const need = useSound ? spokenLetter(current) : current;
-        const got  = useSound ? spokenLetter(pressedUp) : pressedUp;
-        say(`Это ${useSound ? "звук" : "буква"} ${got}. Нужна ${useSound ? "звук" : "буква"} ${need}`);
+        sayCorrection(pressedUp, current, useSound);
       }
 
       if (tileEl) flashTile(tileEl, false);
@@ -742,8 +777,7 @@
       pick();
     } else {
       const useSound = elSoundMode.checked;
-      const spoken = useSound ? spokenLetter(current) : current;
-      say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+      sayPrompt(current, useSound);
     }
   });
 
@@ -788,8 +822,7 @@
   elSoundMode.addEventListener("change", () => {
     if (current) {
       const useSound = elSoundMode.checked;
-      const spoken = useSound ? spokenLetter(current) : current;
-      say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+      sayPrompt(current, useSound);
     }
   });
 
@@ -808,8 +841,7 @@
       e.preventDefault();
       if (current) {
         const useSound = elSoundMode.checked;
-        const spoken = useSound ? spokenLetter(current) : current;
-        say(`Нажми ${useSound ? "звук" : "букву"} ${spoken}`);
+        sayPrompt(current, useSound);
       }
       return;
     }
