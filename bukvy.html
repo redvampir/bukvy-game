@@ -72,12 +72,14 @@
     }
 
     .grid { display:grid; grid-template-columns: repeat(5, minmax(64px, 1fr)); gap:12px; margin-top:14px; }
+    .keypad { display:grid; grid-template-columns: repeat(3, minmax(64px, 1fr)); gap:12px; margin-top:14px; }
     
     .tile {
       font-size:42px; padding:18px 0; border-radius:16px; border:2px solid #f2f2f2;
       background:#fafafa; cursor:pointer; user-select:none;
       transition: transform .05s ease, background .15s ease, border-color .15s ease;
     }
+    .keypad .tile { font-size:36px; }
     .dark-theme .tile { background:#0f3460; border-color:#1a4d7a; color:#fff; }
     .tile:active { transform: scale(0.98); }
     .tile.good { background:#d9fbe1; border-color:#56c271; animation: pulse 0.3s ease; }
@@ -220,7 +222,9 @@
       .row { gap: 6px; }
       
       .grid { grid-template-columns: repeat(3, minmax(70px, 1fr)); gap: 10px; margin-top: 12px; }
+      .keypad { grid-template-columns: repeat(3, minmax(70px, 1fr)); gap: 10px; margin-top: 12px; }
       .tile { font-size: 40px; padding: 16px 0; }
+      .keypad .tile { font-size: 34px; }
       
       .progress-container { height: 24px; margin: 10px 0; }
       .progress-bar { font-size: 11px; min-width: 35px; }
@@ -244,7 +248,9 @@
       .card { padding: 12px; }
       .big { font-size: 64px; }
       .grid { grid-template-columns: repeat(3, minmax(60px, 1fr)); gap: 8px; }
+      .keypad { grid-template-columns: repeat(3, minmax(60px, 1fr)); gap: 8px; }
       .tile { font-size: 36px; padding: 14px 0; }
+      .keypad .tile { font-size: 30px; }
       .pill { font-size: 10px; padding: 4px 7px; }
     }
     .sound-toggle.muted { background: #999; }
@@ -278,8 +284,20 @@
       <span class="pill">Ошибки: <b id="mistakes">0</b></span>
       <span class="pill">Подряд: <b id="streak">0</b> 🔥</span>
       <span class="pill">Точность: <b id="accuracy">100%</b></span>
+      <span class="pill" id="numberInputWrap" hidden>Ввод: <b id="numberInput">—</b></span>
 
       <div class="pill select-pill">
+        <div>Режим:</div>
+        <div class="set-toggle" id="modeToggle" role="radiogroup" aria-label="Режим">
+          <input class="set-radio" type="radio" name="mode" id="mode-letters" value="letters" checked>
+          <label class="set-btn" for="mode-letters">Буквы</label>
+
+          <input class="set-radio" type="radio" name="mode" id="mode-numbers" value="numbers">
+          <label class="set-btn" for="mode-numbers">Цифры</label>
+        </div>
+      </div>
+
+      <div class="pill select-pill" id="letterSetWrap">
         <div>Набор:</div>
         <div class="set-toggle" id="setToggle" role="radiogroup" aria-label="Набор букв">
           <input class="set-radio" type="radio" name="set" id="set-easy" value="easy" checked>
@@ -293,12 +311,26 @@
         </div>
       </div>
 
+      <div class="pill select-pill" id="numberSetWrap" hidden>
+        <div>Сложность:</div>
+        <div class="set-toggle" id="numberToggle" role="radiogroup" aria-label="Сложность цифр">
+          <input class="set-radio" type="radio" name="numset" id="num-easy" value="easy" checked>
+          <label class="set-btn" for="num-easy">Лёгкий</label>
+
+          <input class="set-radio" type="radio" name="numset" id="num-medium" value="medium">
+          <label class="set-btn" for="num-medium">Средний</label>
+
+          <input class="set-radio" type="radio" name="numset" id="num-hard" value="hard">
+          <label class="set-btn" for="num-hard">Сложный</label>
+        </div>
+      </div>
+
       <div class="pill select-pill">
         <div>Голос:</div>
         <select id="voiceSelect" aria-label="Выбор голоса"></select>
       </div>
 
-      <span class="pill toggle-pill">
+      <span class="pill toggle-pill" id="soundModeWrap">
         <label class="toggle-label">
           <input type="checkbox" id="soundMode" />
           Говорить звук (м, с), а не "эм/эс"
@@ -318,11 +350,12 @@
     <div class="history" id="history"></div>
 
     <div class="hint">
-      Клавиатура: включи русский расклад. Пробел = повторить.
+      Клавиатура: <span id="hintKeyboard">включи русский расклад</span>. Пробел = повторить.
       Тренируем: <span class="kbd" id="hintLetters">А О У М С Т Н К Л Р</span>
     </div>
 
     <div class="grid" id="grid"></div>
+    <div class="keypad" id="keypad" hidden></div>
   </div>
 
 <script>
@@ -331,11 +364,42 @@
     vowels: ["А","О","У","Ы","Э","Я","Ё","Е","Ю","И"],
     all: "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("")
   };
+  const NUM_SETS = {
+    easy: { min: 1, max: 10 },
+    medium: { min: 1, max: 30 },
+    hard: { min: 1, max: 50 }
+  };
 
   // “Звуки” (чтобы ребёнок слышал М = “м”, С = “с”, а не “эм/эс”)
   // Для гласных оставляем как есть.
   const SOUND = {
     "Б":"б","В":"в","Г":"г","Д":"д","Ж":"ж","З":"з","Й":"й","К":"к","Л":"л","М":"м","Н":"н","П":"п","Р":"р","С":"с","Т":"т","Ф":"ф","Х":"х","Ц":"ц","Ч":"ч","Ш":"ш","Щ":"щ"
+  };
+
+  const NUMBER_WORDS = {
+    1: "один",
+    2: "два",
+    3: "три",
+    4: "четыре",
+    5: "пять",
+    6: "шесть",
+    7: "семь",
+    8: "восемь",
+    9: "девять",
+    10: "десять",
+    11: "одиннадцать",
+    12: "двенадцать",
+    13: "тринадцать",
+    14: "четырнадцать",
+    15: "пятнадцать",
+    16: "шестнадцать",
+    17: "семнадцать",
+    18: "восемнадцать",
+    19: "девятнадцать",
+    20: "двадцать",
+    30: "тридцать",
+    40: "сорок",
+    50: "пятьдесят"
   };
 
   // Нормализует букву для озвучки (учитывает «звук» режим и особенности произношения)
@@ -347,7 +411,22 @@
     return letter.toLowerCase();
   }
 
+  function spokenNumber(value) {
+    const num = Number.parseInt(value, 10);
+    if (!Number.isFinite(num)) return "";
+    if (NUMBER_WORDS[num]) return NUMBER_WORDS[num];
+    if (num < 20) return NUMBER_WORDS[num] || String(num);
+    const tens = Math.floor(num / 10) * 10;
+    const ones = num % 10;
+    if (!NUMBER_WORDS[tens]) return String(num);
+    if (ones === 0) return NUMBER_WORDS[tens];
+    return `${NUMBER_WORDS[tens]} ${NUMBER_WORDS[ones] || String(ones)}`;
+  }
+
+  let mode = "letters";
   let letters = SETS.easy.slice();
+  let numberSet = "easy";
+  let numberInput = "";
   let current = null;
   let score = 0;
   let mistakes = 0;
@@ -366,7 +445,16 @@
   const elHistory = document.getElementById("history");
   const elGrid = document.getElementById("grid");
   const elSetToggle = document.getElementById("setToggle");
+  const elModeToggle = document.getElementById("modeToggle");
+  const elNumberToggle = document.getElementById("numberToggle");
+  const elLetterSetWrap = document.getElementById("letterSetWrap");
+  const elNumberSetWrap = document.getElementById("numberSetWrap");
+  const elNumberInput = document.getElementById("numberInput");
+  const elNumberInputWrap = document.getElementById("numberInputWrap");
+  const elKeypad = document.getElementById("keypad");
   const elSoundMode = document.getElementById("soundMode");
+  const elSoundModeWrap = document.getElementById("soundModeWrap");
+  const elHintKeyboard = document.getElementById("hintKeyboard");
   const elHintLetters = document.getElementById("hintLetters");
   const elThemeToggle = document.getElementById("themeToggle");
   const elSoundToggle = document.getElementById("soundToggle");
@@ -530,26 +618,32 @@
     }
   }
 
-  function sayPhraseAndLetter(prefix, letter, useSound, priority = false) {
+  function spokenValue(value, useSound) {
+    if (mode === "numbers") return spokenNumber(value);
+    return useSound ? spokenLetter(value) : value;
+  }
+
+  function sayPhraseAndLetter(prefix, value, useSound, priority = false) {
     if (priority) {
       say(prefix, true);
     } else {
       say(prefix);
     }
-    const spoken = useSound ? spokenLetter(letter) : letter;
+    const spoken = spokenValue(value, useSound);
     if (spoken) {
       say(spoken);
     }
   }
 
-  function sayPrompt(letter, useSound, priority = false) {
-    const prefix = `Нажми ${useSound ? "звук" : "букву"}`;
-    sayPhraseAndLetter(prefix, letter, useSound, priority);
+  function sayPrompt(value, useSound, priority = false) {
+    const prefix = mode === "numbers" ? "цифра" : `Нажми ${useSound ? "звук" : "букву"}`;
+    sayPhraseAndLetter(prefix, value, useSound, priority);
   }
 
-  function sayCorrection(gotLetter, needLetter, useSound) {
-    sayPhraseAndLetter(`Это ${useSound ? "звук" : "буква"}`, gotLetter, useSound);
-    sayPhraseAndLetter(`Нужна ${useSound ? "звук" : "буква"}`, needLetter, useSound);
+  function sayCorrection(gotValue, needValue, useSound) {
+    const noun = mode === "numbers" ? "цифра" : (useSound ? "звук" : "буква");
+    sayPhraseAndLetter(`Это ${noun}`, gotValue, useSound);
+    sayPhraseAndLetter(`Нужна ${noun}`, needValue, useSound);
   }
   
   function processQueue() {
@@ -674,6 +768,75 @@
     });
   }
 
+  function updateHint() {
+    if (mode === "numbers") {
+      const range = NUM_SETS[numberSet];
+      elHintLetters.textContent = `${range.min}-${range.max}`;
+      elHintKeyboard.textContent = "цифры на клавиатуре";
+      return;
+    }
+    elHintLetters.textContent = letters.join(" ");
+    elHintKeyboard.textContent = "включи русский расклад";
+  }
+
+  function updateNumberInput() {
+    elNumberInput.textContent = numberInput || "—";
+  }
+
+  function setNumberInput(value) {
+    numberInput = value;
+    updateNumberInput();
+  }
+
+  function addDigit(digit) {
+    if (numberInput.length >= 2) return;
+    if (numberInput === "0") numberInput = "";
+    numberInput += digit;
+    updateNumberInput();
+    autoSubmitIfMatch();
+  }
+
+  function backspaceNumber() {
+    if (!numberInput) return;
+    numberInput = numberInput.slice(0, -1);
+    updateNumberInput();
+  }
+
+  function submitNumber() {
+    if (!numberInput) return;
+    handleAnswer(numberInput);
+  }
+
+  function autoSubmitIfMatch() {
+    if (mode !== "numbers" || !current) return;
+    if (numberInput === current) handleAnswer(numberInput);
+  }
+
+  function buildKeypad() {
+    elKeypad.innerHTML = "";
+    const keys = ["1","2","3","4","5","6","7","8","9","backspace","0","ok"];
+    keys.forEach(key => {
+      const d = document.createElement("div");
+      d.className = "tile";
+      if (key === "backspace") {
+        d.textContent = "⌫";
+        d.dataset.action = "backspace";
+      } else if (key === "ok") {
+        d.textContent = "OK";
+        d.dataset.action = "ok";
+      } else {
+        d.textContent = key;
+        d.dataset.digit = key;
+      }
+      d.addEventListener("click", () => {
+        if (d.dataset.digit) addDigit(d.dataset.digit);
+        if (d.dataset.action === "backspace") backspaceNumber();
+        if (d.dataset.action === "ok") submitNumber();
+      });
+      elKeypad.appendChild(d);
+    });
+  }
+
   function buildGrid() {
     elGrid.innerHTML = "";
     letters.forEach(L => {
@@ -684,21 +847,59 @@
       d.addEventListener("click", () => handleAnswer(L, d));
       elGrid.appendChild(d);
     });
-    elHintLetters.textContent = letters.join(" ");
+    updateHint();
+  }
+
+  function applyMode(nextMode) {
+    mode = nextMode;
+    const isNumbers = mode === "numbers";
+
+    elLetterSetWrap.hidden = isNumbers;
+    elNumberSetWrap.hidden = !isNumbers;
+    elSoundModeWrap.hidden = isNumbers;
+    elGrid.hidden = isNumbers;
+    elKeypad.hidden = !isNumbers;
+    elNumberInputWrap.hidden = !isNumbers;
+
+    if (isNumbers) {
+      buildKeypad();
+      setNumberInput("");
+    } else {
+      buildGrid();
+    }
+
+    updateHint();
+    clearTileMarks();
+    current = null;
+    elTarget.textContent = "—";
+    setStatus("Нажми «Старт»");
+  }
+
+  function applyNumberSet(value) {
+    numberSet = value;
+    updateHint();
+    if (current && mode === "numbers") pick();
   }
 
   function pick() {
-    current = letters[Math.floor(Math.random() * letters.length)];
+    if (mode === "numbers") {
+      const range = NUM_SETS[numberSet];
+      const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+      current = String(value);
+    } else {
+      current = letters[Math.floor(Math.random() * letters.length)];
+    }
     elTarget.textContent = current;
     
-    // Добавляем анимацию появления буквы
+    // Добавляем анимацию появления буквы/числа
     elTarget.classList.remove('bounce', 'shake');
     setTimeout(() => elTarget.classList.add('bounce'), 10);
 
-    const useSound = elSoundMode.checked;
+    const useSound = mode === "letters" ? elSoundMode.checked : false;
     sayPrompt(current, useSound);
 
-    setStatus("Слушай и выбирай 🙂");
+    setStatus(mode === "numbers" ? "Слушай и набирай 🙂" : "Слушай и выбирай 🙂");
+    if (mode === "numbers") setNumberInput("");
     clearTileMarks();
   }
 
@@ -715,8 +916,17 @@
   function handleAnswer(pressed, tileEl=null) {
     if (!current) return;
 
-    const pressedUp = (pressed || "").toUpperCase();
-    const ok = (pressedUp === current);
+    let pressedLabel = "";
+    let ok = false;
+    if (mode === "numbers") {
+      const pressedNum = Number.parseInt(pressed, 10);
+      if (!Number.isFinite(pressedNum)) return;
+      pressedLabel = String(pressedNum);
+      ok = pressedNum === Number.parseInt(current, 10);
+    } else {
+      pressedLabel = (pressed || "").toUpperCase();
+      ok = (pressedLabel === current);
+    }
 
     if (ok) {
       score += 1;
@@ -751,7 +961,7 @@
       mistakes += 1;
       streak = 0;
       updateCounters();
-      updateHistory(pressedUp, false);
+      updateHistory(pressedLabel, false);
       
       playErrorSound();
       
@@ -759,30 +969,45 @@
       elTarget.classList.remove('bounce', 'shake');
       elTarget.classList.add('shake');
 
-      if (pressedUp.length === 1) {
-        setStatus(`❌ Это «${pressedUp}». Слушай ещё раз!`);
+      if (mode === "numbers") {
+        setStatus(`❌ Это «${pressedLabel}». Слушай ещё раз!`);
+        sayCorrection(pressedLabel, current, false);
+      } else if (pressedLabel.length === 1) {
+        setStatus(`❌ Это «${pressedLabel}». Слушай ещё раз!`);
         const useSound = elSoundMode.checked;
-        sayCorrection(pressedUp, current, useSound);
+        sayCorrection(pressedLabel, current, useSound);
       }
 
       if (tileEl) flashTile(tileEl, false);
     }
+
+    if (mode === "numbers") setNumberInput("");
   }
 
   // ---- UI handlers ----
   document.getElementById("start").addEventListener("click", () => {
     // первый клик “разрешает” озвучку
     if (!current) {
-      buildGrid();
+      if (mode === "numbers") {
+        buildKeypad();
+      } else {
+        buildGrid();
+      }
       pick();
     } else {
-      const useSound = elSoundMode.checked;
+      const useSound = mode === "letters" ? elSoundMode.checked : false;
       sayPrompt(current, useSound);
     }
   });
 
   document.getElementById("next").addEventListener("click", () => {
-    if (!current) buildGrid();
+    if (!current) {
+      if (mode === "numbers") {
+        buildKeypad();
+      } else {
+        buildGrid();
+      }
+    }
     pick();
   });
 
@@ -805,12 +1030,17 @@
     elTarget.textContent = "—";
     setStatus("Нажми «Старт»");
     clearTileMarks();
+    setNumberInput("");
   });
 
   function applySet(value) {
     letters = SETS[value].slice();
-    buildGrid();
-    if (current) pick();
+    if (mode === "letters") {
+      buildGrid();
+      if (current) pick();
+    } else {
+      updateHint();
+    }
   }
 
   elSetToggle.addEventListener('change', (e) => {
@@ -819,9 +1049,21 @@
     applySet(input.value);
   });
 
+  elModeToggle.addEventListener('change', (e) => {
+    const input = e.target.closest('input[type="radio"][name="mode"]');
+    if (!input) return;
+    applyMode(input.value);
+  });
+
+  elNumberToggle.addEventListener('change', (e) => {
+    const input = e.target.closest('input[type="radio"][name="numset"]');
+    if (!input) return;
+    applyNumberSet(input.value);
+  });
+
   elSoundMode.addEventListener("change", () => {
     if (current) {
-      const useSound = elSoundMode.checked;
+      const useSound = mode === "letters" ? elSoundMode.checked : false;
       sayPrompt(current, useSound);
     }
   });
@@ -840,12 +1082,28 @@
     if (e.code === "Space") {
       e.preventDefault();
       if (current) {
-        const useSound = elSoundMode.checked;
+        const useSound = mode === "letters" ? elSoundMode.checked : false;
         sayPrompt(current, useSound);
       }
       return;
     }
     if (!current) return;
+
+    if (mode === "numbers") {
+      if (e.key >= "0" && e.key <= "9") {
+        addDigit(e.key);
+        return;
+      }
+      if (e.key === "Backspace") {
+        backspaceNumber();
+        return;
+      }
+      if (e.key === "Enter") {
+        submitNumber();
+        return;
+      }
+      return;
+    }
 
     const pressed = (e.key || "").toUpperCase();
     if (pressed.length !== 1) return;
@@ -884,7 +1142,7 @@
   }
 
   // начальная отрисовка
-  buildGrid();
+  applyMode(mode);
   updateCounters();
 </script>
 </body>
